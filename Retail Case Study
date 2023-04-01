@@ -1,0 +1,200 @@
+## import Packages
+
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import scipy.stats as stats  #for the statistical tests
+%matplotlib inline
+
+### Import the data
+
+Customer = pd.read_csv('C:/Users/ashis/OneDrive/Documents/Data Science 360 Assignment/Python/Case Study 1 - Retail Case Study/Customer.csv ')
+Transactions = pd.read_csv('C:/Users/ashis/OneDrive/Documents/Data Science 360 Assignment/Python/Case Study 1 - Retail Case Study/Transactions.csv ')
+prod_cat_info = pd.read_csv('C:/Users/ashis/OneDrive/Documents/Data Science 360 Assignment/Python/Case Study 1 - Retail Case Study/prod_cat_info.csv ') 
+
+prod_cat_info.info()
+
+Transactions.info()
+
+Customer.info()
+
+## pd.merge( left = Transactions , right = prod_cat_info , how = 'left',on = 'prod_cat_code' )
+
+Trans_product = pd.merge( left = Transactions , right = prod_cat_info , how = 'inner', left_on = ('prod_subcat_code') , right_on = ('prod_sub_cat_code') )
+
+Customer_Final = pd.merge( left = Customer , right =Trans_product , how = 'inner', left_on = 'customer_Id', right_on = 'cust_id' )
+
+Customer_Final.dropna(axis = 1 , inplace = True)
+
+## Question 2 : Prepare a summary report for the merged data set
+
+
+###  a. Get the column names and their corresponding data types
+
+
+Customer_Final.info()
+
+ ### b. Top/Bottom 10 observations
+
+# Customer_Final.head(10)
+
+# Customer_Final.tail(10)
+
+ ### c. “Five-number summary” for continuous variables (min, Q1, median, Q3 and max)
+
+
+def function_descriptive( x ):
+    
+    return pd.Series( [ x.min() , x.quantile(0.01), x.quantile(0.50),x.quantile(0.75), x.max() ] , 
+    index = ['min','Q1','median','Q3','max'])
+
+Customer_Final.loc[ : , ['Qty', 'Rate','Tax','total_amt'] ].apply( lambda x: function_descriptive(x) )
+
+### d. Frequency tables for all the categorical variables
+
+Change_datatype = {'customer_Id' : object ,
+                   'transaction_id' : object ,
+                   'cust_id' : object ,
+                   'prod_subcat_code' : object ,
+                   'prod_cat_code_x' : object ,
+                   'prod_cat_code_y' : object ,  
+                   'prod_sub_cat_code' : object
+                   }
+
+Customer_Final = Customer_Final.astype(Change_datatype)
+
+ # Customer_Final.loc[ : , ['customer_Id', 'city_code','transaction_id','cust_id','prod_subcat_code','prod_cat_code_x','Store_type' ,'prod_cat_code_y', 'prod_cat', 'prod_sub_cat_code', 'prod_subcat']].astype(object).describe().T
+
+Customer_Final.describe(include = ['object']).T   ## Main_Answer
+
+# pd.concat( [Customer_Final.loc[ : , ['customer_Id', 'city_code','transaction_id','cust_id','prod_subcat_code','prod_cat_code_x','Store_type' ,'prod_cat_code_y', 'prod_cat', 'prod_sub_cat_code', 'prod_subcat']].astype(object).describe().T
+   #         , Customer_Final.describe(include = ['object']).T], axis = 0 )  ## Main Answer try to shorten that ..
+
+## 3. Generate histograms for all continuous variables and frequency bars for categorical variables.
+
+
+Customer_Final.dtypes
+
+def func( x ):
+    plt.figure( figsize = (5, 3) )
+    plt.title( 'This is a boxplot for ' + x.name )
+    x.plot(kind = 'hist')
+    plt.show()
+
+Customer_Final.select_dtypes(exclude = 'object').dropna( axis = 1, how = 'all' ).apply( func )
+plt.show()
+
+Customer_Final.DOB = pd.to_datetime ( Customer_Final.DOB , format = '%d-%m-%Y')
+Customer_Final.tran_date= pd.to_datetime (Customer_Final.tran_date , format = '%Y-%m-%d')     
+Customer_Final.dtypes
+
+# Customer_Final.cust_id.value_counts().plot( kind = 'bar' )
+# plt.show()
+
+Customer_Final.Store_type.value_counts().plot( kind = 'bar' )
+plt.show()
+
+Customer_Final.prod_cat.value_counts().plot( kind = 'bar' )
+plt.show()
+
+Customer_Final.prod_subcat.value_counts().plot( kind = 'bar' )
+plt.show()
+
+Customer_Final.prod_cat_code_x.value_counts().plot( kind = 'bar' )
+plt.show()
+
+Customer_Final.prod_cat_code_y.value_counts().plot( kind = 'bar' )
+plt.show()
+
+Customer_Final.prod_sub_cat_code.value_counts().plot( kind = 'bar' )
+plt.show()
+
+# plt.title('This is an example of histogram')
+# plt.title('This is an example of histogram_Qty')
+# plt.ylabel('Freq')
+# plt.xlabel('Bins')
+# Customer_Final.Qty.hist( bins = 10 )
+# plt.show()
+# 
+# plt.title('This is an example of histogram_Rate')
+# plt.ylabel('Freq')
+# plt.xlabel('Bins')
+# Customer_Final.Rate.hist( bins = 10 )
+# plt.show()
+# 
+# plt.title('This is an example of histogram_Tax')
+# plt.ylabel('Freq')
+# plt.xlabel('Bins')
+# Customer_Final.Tax.hist( bins = 10 )
+# plt.show()
+# 
+# plt.title('This is an example of histogram_total_amt')
+# plt.ylabel('Freq')
+# plt.xlabel('Bins')
+# Customer_Final.total_amt.hist( bins = 10 )
+# plt.show()
+
+
+## 4. Calculate the following information using the merged dataset :
+
+###  a. Time period of the available transaction data
+
+Customer_Final.tran_date= pd.to_datetime (Customer_Final.tran_date , format = '%Y-%m-%d')
+(Customer_Final.tran_date.max() - Customer_Final.tran_date.min()).days
+
+### b. Count of transactions where the total amount of transaction was negative
+
+Customer_Final.loc [ (Customer_Final.total_amt < 0) , 'transaction_id'  ].count()
+
+## 5. Analyze which product categories are more popular among females vs male customers.
+
+ Customer_Final.loc [ (Customer_Final.Gender ==  'M') , :  ].dropna(axis = 1).groupby('prod_cat').prod_cat.count().sort_values(ascending = False)
+
+ Customer_Final.loc [ (Customer_Final.Gender ==  'F') , :  ].dropna(axis = 1).groupby('prod_cat').prod_cat.count().sort_values(ascending = False)
+
+### 6. Which City code has the maximum customers and what was the percentage of customers from that city ?
+
+
+
+(((Customer_Final.groupby('city_code').city_code.count() / Customer_Final.groupby('city_code').city_code.count().sum()) * 100).sort_values(ascending=False)).head(1)
+
+
+
+### 7. Which store type sells the maximum products by value and by quantity?
+
+Customer_Final.groupby('Store_type').total_amt.sum().sort_values(ascending=False)
+
+Customer_Final.groupby('Store_type').Qty.sum().sort_values(ascending=False)
+
+## 8. What was the total amount earned from the "Electronics" and "Clothing" categories from flagship stores ?
+
+ # Customer_Final.loc[ Customer_Final.prod_cat isin( ['Electronics', 'Clothing'])  & (Customer_Final.Store_type == 'Flagship store')  , ['prod_cat','Store_type','total_amt']].total_amt.sum()
+
+a = Customer_Final.loc[ ( Customer_Final.prod_cat == 'Electronics') |  (Customer_Final.prod_cat == 'Clothing' ),['Store_type', 'total_amt']]
+a.loc [ a.Store_type == 'Flagship store', : ].total_amt.sum()
+
+## 9. What was the total amount earned from "Male" customers under the "Electronics" category?
+
+Customer_Final.loc[ ( Customer_Final.prod_cat == 'Electronics') | ( Customer_Final.Gender == 'Male')  , ['total_amt']].sum()
+
+## 10. How many customers have more than 10 unique transactions, after removing all transactions which have any negative amounts ?
+
+Filtered_data = Customer_Final.loc[ Customer_Final.total_amt >= 0 , ['customer_Id','transaction_id']].drop_duplicates( subset = 'transaction_id', keep = 'first' ).groupby('customer_Id').transaction_id.count().reset_index()
+Filtered_data.loc[Filtered_data.transaction_id > 10 ,  ].customer_Id.count()
+
+## 11. For all customers aged between 25 - 35, find out:
+
+
+### a. What was the total amount spent for “Electronics” and “Books” product categories?
+
+Customer_Final.DOB = pd.to_datetime ( Customer_Final.DOB , format = '%d-%m-%Y')
+
+Customer_Final.loc [(Customer_Final.DOB.dt.year >= 1987) & Customer_Final.prod_cat.isin (['Electronics','Books']) , 'total_amt'].sum()
+
+### b. What was the total amount spent by these customers between 1st Jan, 2014 to 1st Mar, 2014?
+
+Customer_Final.tran_date = pd.to_datetime ( Customer_Final.tran_date , format = '%Y-%m-%d')
+
+Customer_Final.loc [(Customer_Final.DOB.dt.year >= 1987) & (Customer_Final.tran_date.dt.year >=2014) , 'total_amt'].sum()
